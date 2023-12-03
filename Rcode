@@ -1,0 +1,104 @@
+library(readxl)
+library(tidymodels)
+data <- read_excel("/Users/robertburgeson/Downloads/h1bfirmdata.xlsx")
+
+
+
+
+#Omitted all observations with N/A values
+data <- na.omit(data)
+#Divided Money Variables by GDP Deflator to adjust for inflation across time
+data_adj <- data %>% 
+  mutate(
+    AssetsTotal = AssetsTotal / GDPDeflator,
+    CapitalExpenditures = CapitalExpenditures / GDPDeflator,
+    CostofGoodsSold = CostofGoodsSold / GDPDeflator,
+    DepreciationandAmortization = DepreciationandAmortization / GDPDeflator,
+    DepreciationDepletionandAmor = DepreciationDepletionandAmor / GDPDeflator,
+    OperatingIncomeBeforeDeprecia = OperatingIncomeBeforeDeprecia / GDPDeflator,
+    PropertyPlantandEquipment = PropertyPlantandEquipment / GDPDeflator,
+    SalesTurnoverNet = SalesTurnoverNet / GDPDeflator,
+    A_MEAN = A_MEAN / GDPDeflator
+  )
+
+#Convert data from long to wide by summing, averaging, or assigning values across the years where it makes sense. Avg # of workers across time and summing sales turnover for example.
+df <- data_adj %>% 
+  group_by(GlobalCompanyKey) %>%
+  summarise(
+    fworkers=mean(fworkers, na.rm =TRUE), #mean fworkers
+    A_MEAN=mean(A_MEAN, na.rm=TRUE), #mean wages
+    AssetsTotal=mean(AssetsTotal, na.rm =TRUE), #Mean Assets
+    CapitalExpenditures=sum(CapitalExpenditures, na.rm =TRUE), #Sum Capital Expenditures
+    CostofGoodsSold=sum(CostofGoodsSold, na.rm =TRUE), #sum cost of goods sold
+    DepreciationandAmortization=sum(DepreciationandAmortization, na.rm =TRUE), #sum Depreciation and...
+    DepreciationDepletionandAmor=sum(DepreciationDepletionandAmor, na.rm =TRUE), #sum Dep..Deple...
+    Employees=mean(Employees, na.rm =TRUE), #mean employees
+    OperatingIncomeBeforeDeprecia=sum(OperatingIncomeBeforeDeprecia, na.rm =TRUE), #sum operating Income
+    PropertyPlantandEquipment=mean(PropertyPlantandEquipment, na.rm =TRUE), # mean PPE
+    SalesTurnoverNet=sum(SalesTurnoverNet, na.rm =TRUE), #sum sales turnover
+    City=max(City, na.rm =TRUE), #assign city
+    NorthAmericanIndustryClassifi=max(NorthAmericanIndustryClassifi, na.rm =TRUE), #assign industry
+    StateProvince=max(StateProvince, na.rm =TRUE) #assign state
+  )
+
+
+
+
+
+
+#Convert data from long to wide by summing, averaging, or assigning values across the years where it makes sense. Avg # of workers across time and summing sales turnover for example.
+df <- data_adj %>% 
+  group_by(GlobalCompanyKey) %>%
+  summarise(
+    fworkers=mean(fworkers, na.rm =TRUE), #mean fworkers
+    A_MEAN=mean(A_MEAN, na.rm=TRUE), #mean wages
+    AssetsTotal=mean(AssetsTotal, na.rm =TRUE), #Mean Assets
+    CapitalExpenditures=sum(CapitalExpenditures, na.rm =TRUE), #Sum Capital Expenditures
+    CostofGoodsSold=sum(CostofGoodsSold, na.rm =TRUE), #sum cost of goods sold
+    DepreciationandAmortization=sum(DepreciationandAmortization, na.rm =TRUE), #sum Depreciation and...
+    DepreciationDepletionandAmor=sum(DepreciationDepletionandAmor, na.rm =TRUE), #sum Dep..Deple...
+    Employees=mean(Employees, na.rm =TRUE), #mean employees
+    OperatingIncomeBeforeDeprecia=sum(OperatingIncomeBeforeDeprecia, na.rm =TRUE), #sum operating Income
+    PropertyPlantandEquipment=mean(PropertyPlantandEquipment, na.rm =TRUE), # mean PPE
+    SalesTurnoverNet=sum(SalesTurnoverNet, na.rm =TRUE), #sum sales turnover
+    City=max(City, na.rm =TRUE), #assign city
+    NorthAmericanIndustryClassifi=max(NorthAmericanIndustryClassifi, na.rm =TRUE), #assign industry
+    StateProvince=max(StateProvince, na.rm =TRUE) #assign state
+  )
+
+
+
+
+#Get Industry Avg Wage in a new dataframe
+df_fill <- df %>%
+  group_by(NorthAmericanIndustryClassifi) %>% #group by NorthAmericanIndustryClassi
+  summarise(
+    A_MEAN=mean(A_MEAN, na.rm =TRUE) #get average wage per industry
+  )
+df_fill$IndustryAvgWage <- df_fill$A_MEAN #renamed column just for visual purposes
+
+#merge the data with the full dataset to get new column with avg wage per industry
+df_merged <- merge(df_fill, df, by = "NorthAmericanIndustryClassifi")
+#remove A_mean.x column its redundent
+df_merged <- df_merged[,!grepl("A_MEAN.x",names(df_merged))]
+#Calucluate Percent different wages payed vs industry avg
+df_merged$PercentDiffAvgWages <- ((df_merged$A_MEAN.y - df_merged$IndustryAvgWage) / df_merged$IndustryAvgWage)
+#Remove any less than plus or minus %10 to avoid two companies with very similar wages being compared.
+df_merged2 <- filter(df_merged, abs(df_merged$PercentDiffAvgWages) > .10)
+#binary variabvle pay less than industry avg 1, more than indistry avg 0
+df_merged2$LowerWages <- ifelse(df_merged2$PercentDiffAvgWages > 0, 0, 1)
+#Calculating ROA as a decimal
+df_merged2 <- filter(df_merged2, df_merged2$AssetsTotal > 1)
+df_merged2$OperatingROA <- (df_merged2$OperatingIncomeBeforeDeprecia / df_merged2$AssetsTotal) * 100
+
+
+mydata <- df_merged2
+
+
+
+#Simple OLS
+model_OLS <- lm(
+   OperatingROA ~ LowerWages + fworkers + AssetsTotal + CapitalExpenditures + CostofGoodsSold + DepreciationandAmortization + DepreciationDepletionandAmor + OperatingIncomeBeforeDeprecia + 
+   PropertyPlantandEquipment + SalesTurnoverNet + Employees, data = mydata
+)
+tidy(model_OLS)
