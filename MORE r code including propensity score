@@ -1,3 +1,4 @@
+
 # Cleaning and Formating Data
 ```{r include=FALSE}
 #Omitted all observations with N/A values
@@ -23,14 +24,14 @@ df <- data_adj %>%
     fworkers=mean(fworkers, na.rm =TRUE), #mean fworkers
     A_MEAN=mean(A_MEAN, na.rm=TRUE), #mean wages
     AssetsTotal=mean(AssetsTotal, na.rm =TRUE), #Mean Assets
-    CapitalExpenditures=sum(CapitalExpenditures, na.rm =TRUE), #Sum Capital Expenditures
-    CostofGoodsSold=sum(CostofGoodsSold, na.rm =TRUE), #sum cost of goods sold
-    DepreciationandAmortization=sum(DepreciationandAmortization, na.rm =TRUE), #sum Depreciation and...
-    DepreciationDepletionandAmor=sum(DepreciationDepletionandAmor, na.rm =TRUE), #sum Dep..Deple...
+    CapitalExpenditures=mean(CapitalExpenditures, na.rm =TRUE), #Sum Capital Expenditures
+    CostofGoodsSold=mean(CostofGoodsSold, na.rm =TRUE), #sum cost of goods sold
+    DepreciationandAmortization=mean(DepreciationandAmortization, na.rm =TRUE), #sum Depreciation and...
+    DepreciationDepletionandAmor=mean(DepreciationDepletionandAmor, na.rm =TRUE), #sum Dep..Deple...
     Employees=mean(Employees, na.rm =TRUE), #mean employees
     OperatingIncomeBeforeDeprecia=mean(OperatingIncomeBeforeDeprecia, na.rm =TRUE), #mean operating Income
     PropertyPlantandEquipment=mean(PropertyPlantandEquipment, na.rm =TRUE), # mean PPE
-    SalesTurnoverNet=sum(SalesTurnoverNet, na.rm =TRUE), #sum sales turnover
+    SalesTurnoverNet=mean(SalesTurnoverNet, na.rm =TRUE), #sum sales turnover
     City=max(City, na.rm =TRUE), #assign city
     NorthAmericanIndustryClassifi=max(NorthAmericanIndustryClassifi, na.rm =TRUE), #assign industry
     StateProvince=max(StateProvince, na.rm =TRUE) #assign state
@@ -134,6 +135,10 @@ MatchBalance(treat ~ controls, match.out = rr1, nboots=0, data=mydata)
 
 ```{r}
 #getting summaries for the variables used
+
+fivenum(mydata$)
+```
+
 
 fivenum(mydata$)
 ```
